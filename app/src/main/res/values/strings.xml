@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SmsToEvent</string>
+    <string name="process_msg_btn_text">Process Messages</string>
 </resources>
