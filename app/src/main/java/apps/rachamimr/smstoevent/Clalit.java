@@ -1,8 +1,11 @@
 package apps.rachamimr.smstoevent;
 
+import android.util.Log;
+
 import java.util.Calendar;
 
 public class Clalit implements MsgParser {
+    private static final String TAG = "ClalitParser";
     /* return if the message should be parsed by this parser */
     public boolean shouldHandleMsg(String msg) {
         return msg.contains("נקבע לך תור לדר'");
@@ -27,13 +30,21 @@ public class Clalit implements MsgParser {
         }
 
         String title = "כללית - " + words[5].substring(1)  + " " + words[6];
-        int day = Integer.parseInt(date[0]);
-        int month = Integer.parseInt(date[1]);
+        int day = 0;
+        int month = 0;
+        int hour = 0;
+        int minute = 0;
 
         String[] time = words[12].replace(",","").split(":");
 
-        int hour = Integer.parseInt(time[0]);
-        int minute = Integer.parseInt(time[1]);
+        try {
+            day = Integer.parseInt(date[0]);
+            month = Integer.parseInt(date[1]);
+            hour = Integer.parseInt(time[0]);
+            minute = Integer.parseInt(time[1]);
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "Caught NumberFormatException: " + e.getMessage());
+        }
 
         return  new EventInfo(month, day, hour, minute, location.toString(), title,
                 "Doctor Visit", receivedDate);

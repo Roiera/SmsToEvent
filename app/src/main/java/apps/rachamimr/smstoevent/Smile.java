@@ -1,8 +1,11 @@
 package apps.rachamimr.smstoevent;
 
+import android.util.Log;
+
 import java.util.Calendar;
 
 public class Smile implements MsgParser {
+    private static final String TAG = "SmileParser";
     /* return if the message should be parsed by this parser */
     public boolean shouldHandleMsg(String msg) {
         return msg.contains("סמייל");
@@ -31,13 +34,21 @@ public class Smile implements MsgParser {
         }
 
         String title = "כללית סמייל";
-        int day = Integer.parseInt(date[0]);
-        int month = Integer.parseInt(date[1]);
+        int day = 0;
+        int month = 0;
+        int hour = 0;
+        int minute = 0;
 
         String[] time = dateStr[8].split(":");
 
-        int hour = Integer.parseInt(time[0]);
-        int minute = Integer.parseInt(time[1].substring(0, 1));
+        try {
+            day = Integer.parseInt(date[0]);
+            month = Integer.parseInt(date[1]);
+            hour = Integer.parseInt(time[0]);
+            minute = Integer.parseInt(time[1].substring(0, 1));
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "Caught NumberFormatException: " + e.getMessage());
+        }
 
         return  new EventInfo(month, day, hour, minute, location.toString(), title,
                 "Doctor Visit", receivedDate);
