@@ -11,7 +11,7 @@ public class MainApp {
 
         msgParsers.add(new Smile());
         msgParsers.add(new Clalit());
-        msgParsers.add(new Macabi());
+        msgParsers.add(new Maccabi());
 
         return msgParsers;
     }

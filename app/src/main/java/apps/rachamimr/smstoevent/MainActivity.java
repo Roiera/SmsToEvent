@@ -31,14 +31,14 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG = "MainActivity";
 
     private static final int REQUEST_APP_PERMISSIONS = 0;
-    private static final String[] PERMISSIONS_APP = { Manifest.permission.READ_CALENDAR,
-        Manifest.permission.WRITE_CALENDAR, Manifest.permission.READ_SMS };
+    private static final String[] PERMISSIONS_APP = {Manifest.permission.READ_CALENDAR,
+        Manifest.permission.WRITE_CALENDAR, Manifest.permission.READ_SMS};
 
     private int requestPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, PERMISSIONS_APP, REQUEST_APP_PERMISSIONS );
+            ActivityCompat.requestPermissions(this, PERMISSIONS_APP, REQUEST_APP_PERMISSIONS);
             return -1;
         }
 
@@ -75,15 +75,34 @@ public class MainActivity extends AppCompatActivity
         cursor = cr.query(CalendarContract.Calendars.CONTENT_URI, projection,
                 CalendarContract.Events.IS_PRIMARY + "=1", null, null);
 
-        if (cursor.moveToFirst()){
+        if (cursor.moveToFirst()) {
             int idCol = cursor.getColumnIndex(projection[0]);
             do {
                 calID = cursor.getString(idCol);
-            } while(cursor.moveToNext());
+            } while (cursor.moveToNext());
             cursor.close();
         }
 
         return calID;
+    }
+
+    private boolean isEventExists(EventInfo eventInfo) {
+        Calendar beginTime = Calendar.getInstance();
+        Calendar endTime = Calendar.getInstance();
+        beginTime.set(eventInfo.year, eventInfo.month - 1, eventInfo.day, eventInfo.hour, eventInfo.minute);
+        endTime.set(eventInfo.year, eventInfo.month - 1, eventInfo.day, eventInfo.hour + 1, eventInfo.minute);
+
+        String[] projection = new String[]{
+                CalendarContract.Instances._ID,
+                CalendarContract.Instances.BEGIN,
+                CalendarContract.Instances.END,
+                CalendarContract.Instances.EVENT_ID};
+        Cursor cursor =
+                CalendarContract.Instances.query(getContentResolver(), projection,
+                        beginTime.getTimeInMillis(), endTime.getTimeInMillis(),
+                        "\"" + eventInfo.description + "\"");
+
+        return (cursor.getCount() > 0);
     }
 
     private int createEvent(EventInfo eventInfo) {
@@ -93,18 +112,6 @@ public class MainActivity extends AppCompatActivity
         beginTime.set(eventInfo.year, eventInfo.month - 1, eventInfo.day, eventInfo.hour, eventInfo.minute);
         endTime.set(eventInfo.year, eventInfo.month - 1, eventInfo.day, eventInfo.hour + 1, eventInfo.minute);
 
-        String[] projection = new String[]{
-                        CalendarContract.Instances._ID,
-                        CalendarContract.Instances.BEGIN,
-                        CalendarContract.Instances.END,
-                        CalendarContract.Instances.EVENT_ID};
-        Cursor cursor =
-                CalendarContract.Instances.query(getContentResolver(), projection,
-                        beginTime.getTimeInMillis(), endTime.getTimeInMillis(),
-                        "\"" + eventInfo.description + "\"");
-        if (cursor.getCount() > 0) {
-            return -1;
-        }
 
         ContentValues values = new ContentValues();
         values.put(CalendarContract.Events.DTSTART, beginTime.getTimeInMillis());
@@ -145,7 +152,7 @@ public class MainActivity extends AppCompatActivity
 
             EventInfo eventInfo = mainApp.processMsg(address, body, receivedDate);
 
-            if (eventInfo != null) {
+            if (eventInfo != null && !isEventExists(eventInfo)) {
                 eventsInfo.add(eventInfo);
             }
         }
@@ -154,8 +161,45 @@ public class MainActivity extends AppCompatActivity
             cur.close();
         }
 
-        showEventDialog();
+        if (eventsInfo.isEmpty()) {
+            String message = "No relevant messages";
+            Snackbar.make(findViewById(R.id.MainLayout),
+                    message, Snackbar.LENGTH_LONG).show();
+        } else {
+            showEventDialog();
+        }
     }
+
+    private void showEventDialog() {
+        if (!eventsInfo.isEmpty()) {
+            Builder builder = new Builder((MainActivity.this));
+            builder.setMessage(eventsInfo.peek().toString()).setPositiveButton("Add Event", dialogClickListener).
+                    setNegativeButton("Discard", dialogClickListener).show();
+        }
+    }
+
+    DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+            switch (which){
+                case DialogInterface.BUTTON_POSITIVE:
+                    createEvent(eventsInfo.peek());
+                    String message = "Event created";
+                    Snackbar.make(findViewById(R.id.MainLayout),
+                            message, Snackbar.LENGTH_LONG).show();
+                    break;
+
+                case DialogInterface.BUTTON_NEGATIVE:
+                    //No button clicked
+                    break;
+            }
+            eventsInfo.poll();
+
+            if (!eventsInfo.isEmpty()) {
+                showEventDialog();
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,40 +220,4 @@ public class MainActivity extends AppCompatActivity
             }
         });
     }
-
-    private void showEventDialog() {
-        if (!eventsInfo.isEmpty()) {
-            Builder builder = new Builder((MainActivity.this));
-            builder.setMessage(eventsInfo.peek().toString()).setPositiveButton("Add Event", dialogClickListener).
-                    setNegativeButton("Discard", dialogClickListener).show();
-        }
-    }
-
-    DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-                switch (which){
-                    case DialogInterface.BUTTON_POSITIVE:
-                        int res = createEvent(eventsInfo.peek());
-                        String message;
-
-                        if (res < 0) {
-                            message = "Event already exists";
-                        } else {
-                            message = "Event created";
-                        }
-
-                        Snackbar.make(findViewById(R.id.MainLayout),
-                                message, Snackbar.LENGTH_LONG).show();
-                        break;
-
-                    case DialogInterface.BUTTON_NEGATIVE:
-                        //No button clicked
-                        break;
-            }
-
-            eventsInfo.poll();
-            showEventDialog();
-        }
-    };
 }

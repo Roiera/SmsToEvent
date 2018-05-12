@@ -4,7 +4,7 @@ import android.util.Log;
 
 import java.util.Calendar;
 
-public class Macabi implements MsgParser {
+public class Maccabi implements MsgParser {
     private static final String TAG = "MacabiParser";
     /* return if the message should be parsed by this parser */
     public boolean shouldHandleMsg(String msg) {
@@ -14,8 +14,13 @@ public class Macabi implements MsgParser {
     /* Parses the message */
     public EventInfo parseMsg(String msg, Calendar receivedDate) {
         String MSG_PREFIX = "נקבע תור";
+        String[] words = new String[0];
 
-        String[] words = msg.substring(msg.indexOf(MSG_PREFIX)).split(" ");
+        try {
+            words = msg.substring(msg.indexOf(MSG_PREFIX)).split(" ");
+        } catch (StringIndexOutOfBoundsException ex) {
+            Log.e(TAG, "Invalid message :" + msg);
+        }
 
         if (words.length < 7) {
             return null;
