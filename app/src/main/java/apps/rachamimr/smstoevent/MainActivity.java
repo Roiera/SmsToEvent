@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity
 
     private static final int REQUEST_APP_PERMISSIONS = 0;
     private static final String[] PERMISSIONS_APP = {Manifest.permission.READ_CALENDAR,
-        Manifest.permission.WRITE_CALENDAR, Manifest.permission.READ_SMS};
+            Manifest.permission.WRITE_CALENDAR, Manifest.permission.READ_SMS};
 
     private int requestPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED ||
@@ -66,14 +66,14 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private String getPrimaryCalendarID() {
+    private String getCalendarID() {
         String projection[] = {CalendarContract.Events._ID};
         ContentResolver cr = getContentResolver();
         Cursor cursor;
         String calID = "0";
 
         cursor = cr.query(CalendarContract.Calendars.CONTENT_URI, projection,
-                CalendarContract.Events.IS_PRIMARY + "=1", null, null);
+                CalendarContract.Events.OWNER_ACCOUNT + " LIKE '%@gmail.com'", null, null);
 
         if (cursor.moveToFirst()) {
             int idCol = cursor.getColumnIndex(projection[0]);
@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity
         values.put(CalendarContract.Events.TITLE, eventInfo.title);
         values.put(CalendarContract.Events.DESCRIPTION, eventInfo.description);
         values.put(CalendarContract.Events.EVENT_TIMEZONE, "Asia/Jerusalem");
-        values.put(CalendarContract.Events.CALENDAR_ID, getPrimaryCalendarID());
+        values.put(CalendarContract.Events.CALENDAR_ID, getCalendarID());
 
         cr.insert(CalendarContract.Events.CONTENT_URI, values);
 
@@ -187,8 +187,7 @@ public class MainActivity extends AppCompatActivity
                     String message = "Event created";
                     Snackbar.make(findViewById(R.id.MainLayout),
                             message, Snackbar.LENGTH_LONG).show();
-                    break;
-
+                        break;
                 case DialogInterface.BUTTON_NEGATIVE:
                     //No button clicked
                     break;
